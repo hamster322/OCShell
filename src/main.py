@@ -1,4 +1,5 @@
 import tkinter as tk
+import shlex
 
 state={
     "userName": "User",
@@ -18,7 +19,7 @@ def on_enter_pressed(event):
     systemGreeting = f"{state['userName']}@{state['NetName']}:{state['current_dir']}$ "
     text = systemGreeting+command
     print_text_to_lable(text)
-    tokens = command.split()
+    tokens = shlex.split(command)
     comm = tokens[0]
     args = tokens[1:]
     handler = commands.get(comm)
