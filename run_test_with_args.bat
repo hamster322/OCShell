@@ -1,0 +1,1 @@
+python ./src/main.py --vfs-path C:/ --script D:/test_script.txt

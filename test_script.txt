@@ -1,0 +1,6 @@
+ls
+cd -a
+ls -a
+
+gf
+cd

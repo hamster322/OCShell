@@ -1,0 +1,1 @@
+python ./src/main.py --vfs-path / --script /home/Hamak/PycharmProjects/OCShell/test_script.txt
