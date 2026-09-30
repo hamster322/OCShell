@@ -22,15 +22,21 @@ def print_text_to_lable(text_):
 def on_enter_pressed(event):
     command = entry.get()
     entry.delete(0, tk.END)
-    systemGreeting = f"{state['userName']}@{state['NetName']}:{state['current_dir']}$ "
-    text = systemGreeting+command
+    system_greeting = f"{state['userName']}@{state['NetName']}:{state['current_dir']}$ "
+    text = system_greeting+command
     print_text_to_lable(text)
     execute_command(command)
 
 def execute_command(command):
-    tokens = shlex.split(command)
+    try:
+        tokens = shlex.split(command)
+    except ValueError:
+        print_text_to_lable("Не получилось извлечь аргумент!!!")
+        return
+
     comm = tokens[0]
     args = tokens[1:]
+
     handler = commands.get(comm)
     if (handler):
         handler(args)
@@ -84,8 +90,11 @@ def run_script(script_path):
 def debug_print_params():
     """Вывод параметров командной строки"""
     print_text_to_lable("Параметры запуска эмулятора:")
-    print_text_to_lable(f"Путь к VFS: {state['vfs_path'] if state['vfs_path'] else '(не указан)'}")
-    print_text_to_lable(f"Путь к скрипту: {state['script_path'] if state['script_path'] else '(не указан)'}")
+    print_text_to_lable(f"Путь к VFS: {state['vfs_path']}")
+    if (state["script_path"]):
+        print_text_to_lable(f"Путь к скрипту: {state['script_path']}")
+    else:
+        print_text_to_lable(f"Путь к скрипту не указан")
     print_text_to_lable(f"Имя пользователя: {state['userName']}")
     print_text_to_lable(f"Сеть: {state['NetName']}")
     print_text_to_lable(f"Текущая директория: {state['current_dir']}")
@@ -93,8 +102,8 @@ def debug_print_params():
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--vfs-path', type=str, default="",help='Путь к физическому расположению VFS')
-    parser.add_argument('--script', type=str, default="",help='Путь к стартовому скрипту')
+    parser.add_argument('--vfs-path', type=str, default="")
+    parser.add_argument('--script', type=str, default="")
     return parser.parse_args()
 
 args = parse_args()
@@ -111,13 +120,13 @@ output.pack(side=tk.TOP, fill=tk.BOTH, expand=True, pady=5, padx=10)
 input_frame = tk.Frame(root)
 input_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=5, pady=5)
 
-systemGreeting = tk.Label(
+system_greeting = tk.Label(
     input_frame,
     text=f"{state['userName']}@{state['NetName']}:{state['current_dir']}$ ",
     anchor="w"
 )
 
-systemGreeting.pack(side=tk.LEFT)
+system_greeting.pack(side=tk.LEFT)
 
 entry = tk.Entry(input_frame)
 entry.pack(side=tk.LEFT,fill=tk.X, expand=True)
