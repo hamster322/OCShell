@@ -1,1 +1,1 @@
-python ./src/main.py --vfs-path /
+python ./src/main.py --vfs-path ./vfs_tests/4.zip
