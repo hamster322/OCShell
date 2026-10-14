@@ -2,8 +2,6 @@ import argparse
 import tkinter as tk
 import shlex
 import os
-from os import wait
-from time import sleep
 
 state={
     "userName": "User",
@@ -22,7 +20,8 @@ def print_text_to_lable(text_):
 def on_enter_pressed(event):
     command = entry.get()
     entry.delete(0, tk.END)
-    system_greeting = f"{state['userName']}@{state['NetName']}:{state['current_dir']}$ "
+    system_greeting = (f"{state['userName']}"
+                       f"@{state['NetName']}:{state['current_dir']}$ ")
     text = system_greeting+command
     print_text_to_lable(text)
     execute_command(command)
@@ -83,7 +82,8 @@ def run_script(script_path):
         success = execute_command(line)
 
         if not success:
-            print_text_to_lable(f"Ошибка при выполнении строки {line_num}: '{line}'")
+            print_text_to_lable("Ошибка при выполнении строки"
+                                f" {line_num}: '{line}'")
             print_text_to_lable("Выполнение скрипта остановлено!!!")
             break
 
