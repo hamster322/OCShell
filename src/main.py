@@ -4,7 +4,6 @@ import shlex
 import os
 import zipfile
 import datetime
-import platform
 
 state={
     "userName": "User",
@@ -21,9 +20,9 @@ def load_vfs(vfs_path):
     vfs = {}
     if not os.path.exists(vfs_path):
         try:
-            with zipfile.ZipFile(vfs_path, 'w') as zf:
-                pass
-            print_text_to_lable(f"Файл '{vfs_path}' не найден. Создан пустой архив.")
+            with zipfile.ZipFile(vfs_path, 'w') as zf: pass
+            print_text_to_lable(f"Файл '{vfs_path}' "
+            "не найден. Создан пустой архив.")
             vfs["/"]={
                 'is_dir': True,
                 'size': 0,
@@ -32,14 +31,11 @@ def load_vfs(vfs_path):
             }
             return {}, None
         except Exception as e:
-            return None, f"Ошибка при создании пустого архива '{vfs_path}': {str(e)}"
-
+            return None, f"Ошибка '{vfs_path}': {str(e)}"
     if not zipfile.is_zipfile(vfs_path):
-        return None, f"Ошибка: '{vfs_path}' не является ZIP-архивом!"
-
-    if vfs_path=="":
-        return None, "Ошибка: путь к vfs не указан!"
-
+        return None, (f"Ошибка: '{vfs_path}' не "
+                      "является ZIP-архивом!")
+    if vfs_path=="": return None, "Ошибка: путь к vfs не указан!"
     try:
         with zipfile.ZipFile(vfs_path, 'r') as zip_ref:
             for info in zip_ref.infolist():
@@ -47,7 +43,8 @@ def load_vfs(vfs_path):
                 vfs["/"+path] = {
                     'is_dir': info.is_dir(),
                     'size': info.file_size,
-                    'date': datetime.datetime(*info.date_time[0:6]).strftime('%Y-%m-%d %H:%M'),
+                    'date': datetime.
+                    datetime(*info.date_time[0:6]).strftime('%Y-%m-%d %H:%M'),
                     'content': zip_ref.read(path) if not info.is_dir() else None
                 }
             vfs["/"] = {
@@ -60,11 +57,11 @@ def load_vfs(vfs_path):
     except Exception as e:
         return None, f"Ошибка при чтении архива: {str(e)}"
 
-
 def normalize_path(path):
     """Нормализация пути"""
     if not path.startswith('/'):
-        path = state['current_dir'] + '/' + path if state['current_dir'] != '/' else '/' + path
+        path = state['current_dir'] + '/' + path \
+            if state['current_dir'] != '/' else '/' + path
 
     parts = path.split('/')
     normalized = []
@@ -96,10 +93,12 @@ def list_directory(dir_path):
 
     entry = get_vfs_entry(dir_path)
     if entry is None:
-        return None, f"Невозможно получить доступ к '{dir_path}': Нет такого файла или каталога"
+        return None, ("Невозможно получить доступ к "
+                      f"'{dir_path}': Нет такого файла или каталога")
 
     if not entry['is_dir']:
-        return None, f"Невозможно получить доступ к '{dir_path}': Не является каталогом"
+        return None, ("Невозможно получить доступ к "
+                      f"'{dir_path}': Не является каталогом")
 
     contents = []
     for path, info in state['vfs'].items():
@@ -121,7 +120,8 @@ def on_enter_pressed(event):
     """Обработка нажатия Enter при вводе команды"""
     command = entry.get()
     entry.delete(0, tk.END)
-    system_greeting = f"{state['userName']}@{state['NetName']}:{state['current_dir']}$ "
+    system_greeting = (f"{state['userName']}"
+                       f"@{state['NetName']}:{state['current_dir']}$ ")
     text = system_greeting+command
     print_text_to_lable(text)
     execute_command(command)
@@ -208,7 +208,8 @@ def run_script(script_path):
         success = execute_command(line)
 
         if not success:
-            print_text_to_lable(f"Ошибка при выполнении строки {line_num}: '{line}'")
+            print_text_to_lable("Ошибка при выполнении"
+                                f" строки {line_num}: '{line}'")
             print_text_to_lable("Выполнение скрипта остановлено!!!")
             break
 
