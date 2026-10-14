@@ -1,0 +1,9 @@
+rm
+rm 2
+rm 2 -r
+rmdir 2.txt
+rmdir
+rmdir 1
+cd 1
+rmdir 3
+ls

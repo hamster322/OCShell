@@ -21,9 +21,9 @@ def load_vfs(vfs_path):
     vfs = {}
     if not os.path.exists(vfs_path):
         try:
-            with zipfile.ZipFile(vfs_path, 'w') as zf:
-                pass
-            print_text_to_lable(f"Файл '{vfs_path}' не найден. Создан пустой архив.")
+            with zipfile.ZipFile(vfs_path, 'w') as zf: pass
+            print_text_to_lable(f"Файл '{vfs_path}' "
+            "не найден. Создан пустой архив.")
             vfs["/"]={
                 'is_dir': True,
                 'size': 0,
@@ -32,14 +32,11 @@ def load_vfs(vfs_path):
             }
             return {}, None
         except Exception as e:
-            return None, f"Ошибка при создании пустого архива '{vfs_path}': {str(e)}"
-
+            return None, f"Ошибка '{vfs_path}': {str(e)}"
     if not zipfile.is_zipfile(vfs_path):
-        return None, f"Ошибка: '{vfs_path}' не является ZIP-архивом!"
-
-    if vfs_path=="":
-        return None, "Ошибка: путь к vfs не указан!"
-
+        return None, (f"Ошибка: '{vfs_path}' не "
+                      "является ZIP-архивом!")
+    if vfs_path=="": return None, "Ошибка: путь к vfs не указан!"
     try:
         with zipfile.ZipFile(vfs_path, 'r') as zip_ref:
             for info in zip_ref.infolist():
@@ -47,7 +44,8 @@ def load_vfs(vfs_path):
                 vfs["/"+path] = {
                     'is_dir': info.is_dir(),
                     'size': info.file_size,
-                    'date': datetime.datetime(*info.date_time[0:6]).strftime('%Y-%m-%d %H:%M'),
+                    'date': datetime.
+                    datetime(*info.date_time[0:6]).strftime('%Y-%m-%d %H:%M'),
                     'content': zip_ref.read(path) if not info.is_dir() else None
                 }
             vfs["/"] = {
@@ -64,7 +62,8 @@ def load_vfs(vfs_path):
 def normalize_path(path):
     """Нормализация пути"""
     if not path.startswith('/'):
-        path = state['current_dir'] + '/' + path if state['current_dir'] != '/' else '/' + path
+        path = state['current_dir'] + '/' + path \
+            if state['current_dir'] != '/' else '/' + path
 
     parts = path.split('/')
     normalized = []
@@ -96,10 +95,12 @@ def list_directory(dir_path):
 
     entry = get_vfs_entry(dir_path)
     if entry is None:
-        return None, f"Невозможно получить доступ к '{dir_path}': Нет такого файла или каталога"
+        return None, ("Невозможно получить доступ к "
+                      f"'{dir_path}': Нет такого файла или каталога")
 
     if not entry['is_dir']:
-        return None, f"Невозможно получить доступ к '{dir_path}': Не является каталогом"
+        return None, ("Невозможно получить доступ к "
+                      f"'{dir_path}': Не является каталогом")
 
     contents = []
     for path, info in state['vfs'].items():
@@ -121,7 +122,8 @@ def on_enter_pressed(event):
     """Обработка нажатия Enter при вводе команды"""
     command = entry.get()
     entry.delete(0, tk.END)
-    system_greeting = f"{state['userName']}@{state['NetName']}:{state['current_dir']}$ "
+    system_greeting = (f"{state['userName']}"
+                       f"@{state['NetName']}:{state['current_dir']}$ ")
     text = system_greeting+command
     print_text_to_lable(text)
     execute_command(command)
@@ -147,7 +149,8 @@ def execute_command(command):
 
 def human_readable_size(size):
     """Форматирование размера файла в читаемый вид (K, M, G)"""
-    if size < 1024:
+    minSize = 1024
+    if size < minSize:
         return f"{size} B"
     elif size < 1024 * 1024:
         return f"{size / 1024:.1f} K"
@@ -156,7 +159,7 @@ def human_readable_size(size):
     else:
         return f"{size / (1024 * 1024 * 1024):.1f} G"
 
-def splitArgs(args):
+def split_args(args):
     flags=[]
     target=state['current_dir']
     for arg in args:
@@ -167,16 +170,34 @@ def splitArgs(args):
             target=arg
     return flags, target
 
+
+def format_long_entry(name, info, flags):
+    """Форматирует запись для длинного вывода (флаг -l)"""
+    type_char = 'd' if info['is_dir'] else '-'
+    size = info['size']
+
+    if 'h' in flags and not info['is_dir']:
+        size_str = human_readable_size(size)
+    else:
+        size_str = str(size)
+
+    date = info.get('date', '0000-00-00 00:00')
+    marker = '/' if info['is_dir'] else ''
+
+    return f"{type_char}  {size_str:>8}  {date}  {name}{marker}"
+
+
 def ls_comm(args):
     """Описание команды ls"""
-    flags, target = splitArgs(args)
+    flags, target = split_args(args)
     contents, error = list_directory(target)
+
     if error:
         print_text_to_lable(error)
         return
 
     if 'a' not in flags:
-        contents = [(name, info) for name, info in contents if not name.startswith('.')]
+        contents = [c for c in contents if not c[0].startswith('.')]
 
     if not contents:
         print_text_to_lable("(пусто)")
@@ -185,27 +206,14 @@ def ls_comm(args):
     contents = sorted(contents, key=lambda x: x[0])
 
     if 'a' in flags:
-        dot_entry = {'is_dir': True, 'size': 0, 'date': '', 'content': None}
-        dotdot_entry = {'is_dir': True, 'size': 0, 'date': '', 'content': None}
-        contents = [('.', dot_entry), ('..', dotdot_entry)] + contents
+        dot = {'is_dir': True, 'size': 0, 'date': '', 'content': None}
+        contents = [('.', dot), ('..', dot)] + contents
 
     for name, info in contents:
-        marker = '/' if info['is_dir'] else ''
-
         if 'l' in flags:
-            type_char = 'd' if info['is_dir'] else '-'
-
-            size = info['size']
-            if 'h' in flags and not info['is_dir']:
-                size_str = human_readable_size(size)
-            else:
-                size_str = str(size)
-
-            date = info.get('date', '0000-00-00 00:00')
-            print_text_to_lable(
-                f"{type_char}  {size_str:>8}  {date}  {name}{marker}"
-            )
+            print_text_to_lable(format_long_entry(name, info, flags))
         else:
+            marker = '/' if info['is_dir'] else ''
             print_text_to_lable(f"{name}{marker}")
 
 def cd_comm(args):
@@ -237,7 +245,8 @@ def cd_comm(args):
             print_text_to_lable("Ошибка, нет такой директории")
 
 def update_system_greeting():
-    system_greeting.config(text=f"{state['userName']}@{state['NetName']}:{state['current_dir']}$ ")
+    system_greeting.config(text=f"{state['userName']}"
+                                f"@{state['NetName']}:{state['current_dir']}$ ")
 
 def exit_comm(args):
     """Описание команды exit"""
@@ -248,22 +257,39 @@ def clear_comm(args):
     output.delete("1.0","end")
     output.config(state=tk.DISABLED)
 
+def collect_recursive_paths(dir_path):
+    """Собирает все пути внутри директории для рекурсивного удаления"""
+    dir_path = dir_path if dir_path.endswith('/') else dir_path + '/'
+    return [
+        p for p in state['vfs']
+        if p == dir_path or p.startswith(dir_path)
+    ]
+
+def remove_vfs_entry(path):
+    """Удаляет запись из VFS по пути"""
+    if path in state['vfs']:
+        del state['vfs'][path]
+    elif path + '/' in state['vfs']:
+        del state['vfs'][path + '/']
+
+def parse_rm_args(args):
+    """Разбирает аргументы rm: возвращает (recursive, targets)"""
+    recursive = False
+    targets = []
+    for arg in args:
+        if arg in ('-r', '-R'):
+            recursive = True
+        else:
+            targets.append(arg)
+    return recursive, targets
+
 def rm_comm(args):
     """Удаление файлов и директорий"""
     if not args:
         print_text_to_lable("rm: отсутствует аргумент")
         return
 
-    recursive = False
-    targets = []
-
-    for arg in args:
-        if arg.startswith("-"):
-            if "r" in arg or "R" in arg:
-                recursive = True
-        else:
-            targets.append(arg)
-
+    recursive, targets = parse_rm_args(args)
     if not targets:
         print_text_to_lable("rm: отсутствует аргумент")
         return
@@ -273,31 +299,35 @@ def rm_comm(args):
         entry = get_vfs_entry(path)
 
         if entry is None:
-            print_text_to_lable(f"rm: невозможно удалить '{target}' - файл не найден")
+            print_text_to_lable(f"rm: '{target}' - файл не найден")
+            continue
+        if entry['is_dir'] and not recursive:
+            print_text_to_lable(f"rm: '{target}' - каталог (нужен -r)")
             continue
 
         if entry['is_dir']:
-            if not recursive:
-                print_text_to_lable(f"rm: невозможно удалить '{target}' - каталог")
-                continue
-
-            paths_to_remove = []
-            dir_path = path if path.endswith('/') else path + '/'
-
-            for vfs_path in list(state['vfs'].keys()):
-                if vfs_path == dir_path or vfs_path.startswith(dir_path):
-                    paths_to_remove.append(vfs_path)
-
-            for p in paths_to_remove:
+            for p in collect_recursive_paths(path):
                 del state['vfs'][p]
-
             print_text_to_lable(f"Удалено: {target} (рекурсивно)")
         else:
-            # Удаление файла
-            if path in state['vfs']:
-                del state['vfs'][path]
+            remove_vfs_entry(path)
             print_text_to_lable(f"Удалено: {target}")
 
+
+def is_dir_empty(dir_path):
+    """Проверяет, пуста ли директория в VFS"""
+    dir_path = dir_path if dir_path.endswith('/') else dir_path + '/'
+    return not any(
+        p.startswith(dir_path) and p != dir_path
+        for p in state['vfs']
+    )
+
+def remove_vfs_entry(path):
+    """Удаляет запись из VFS по пути"""
+    if path in state['vfs']:
+        del state['vfs'][path]
+    elif path + '/' in state['vfs']:
+        del state['vfs'][path + '/']
 
 def rmdir_comm(args):
     """Удаление пустых директорий"""
@@ -310,30 +340,16 @@ def rmdir_comm(args):
         entry = get_vfs_entry(path)
 
         if entry is None:
-            print_text_to_lable(f"rmdir: невозможно удалить '{target}' - файл не найден")
+            print_text_to_lable(f"rmdir: '{target}' - файл не найден")
             continue
-
         if not entry['is_dir']:
-            print_text_to_lable(f"rmdir: невозможно удалить '{target}' - не каталог")
+            print_text_to_lable(f"rmdir: '{target}' - не каталог")
+            continue
+        if not is_dir_empty(path):
+            print_text_to_lable(f"rmdir: '{target}' - не пуста")
             continue
 
-        dir_path = path if path.endswith('/') else path + '/'
-        has_children = False
-
-        for vfs_path in state['vfs'].keys():
-            if vfs_path.startswith(dir_path) and vfs_path != dir_path:
-                has_children = True
-                break
-
-        if has_children:
-            print_text_to_lable(f"rmdir: невозможно удалить '{target}' - не пуста")
-            continue
-
-        if path in state['vfs']:
-            del state['vfs'][path]
-        elif path + '/' in state['vfs']:
-            del state['vfs'][path + '/']
-
+        remove_vfs_entry(path)
         print_text_to_lable(f"Удалено: {target}")
 
 def whoami_comm(args):
@@ -371,7 +387,8 @@ def run_script(script_path):
         success = execute_command(line)
 
         if not success:
-            print_text_to_lable(f"Ошибка при выполнении строки {line_num}: '{line}'")
+            print_text_to_lable(f"Ошибка при выполнении"
+                                " строки {line_num}: '{line}'")
             print_text_to_lable("Выполнение скрипта остановлено!!!")
             break
 
